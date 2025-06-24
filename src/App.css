@@ -31,6 +31,10 @@ body {
   background: #a8a8a8;
 }
 
+.ant-list-item {
+  padding-left: 12px !important;
+}
+
 /* 任务列表项悬停效果 */
 .ant-list-item:hover {
   background-color: #fafafa;
