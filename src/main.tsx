@@ -14,12 +14,31 @@ import { Menu } from "@tauri-apps/api/menu";
 import { register } from "@tauri-apps/plugin-global-shortcut";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+// 添加防抖标志
+let isProcessingShortcut = false;
+
 await register("CommandOrControl+Shift+T", async () => {
+  // 防止重复执行
+  if (isProcessingShortcut) {
+    return;
+  }
+
+  isProcessingShortcut = true;
   console.log("Shortcut triggered");
-  const window = getCurrentWindow();
-  const isAlwaysOnTop = await window.isAlwaysOnTop();
-  await window.setAlwaysOnTop(!isAlwaysOnTop);
-  message.success(isAlwaysOnTop ? "窗口已取消置顶" : "窗口已置顶");
+
+  try {
+    const window = getCurrentWindow();
+    const isAlwaysOnTop = await window.isAlwaysOnTop();
+    await window.setAlwaysOnTop(!isAlwaysOnTop);
+    message.success(isAlwaysOnTop ? "窗口已取消置顶" : "窗口已置顶");
+  } catch (error) {
+    console.error("快捷键执行失败:", error);
+  } finally {
+    // 延迟重置标志，防止快速重复触发
+    setTimeout(() => {
+      isProcessingShortcut = false;
+    }, 100);
+  }
 });
 
 const menu = await Menu.new({
@@ -32,15 +51,16 @@ const menu = await Menu.new({
 });
 
 const options = {
-  icon: await defaultWindowIcon(),
+  icon: (await defaultWindowIcon()) || undefined,
   menu,
   menuOnRightClick: true,
   menuOnLeftClick: false,
   action: (event: any) => {
     switch (event.type) {
       case "DoubleClick":
-        console.log("DoubleClick");
-        show();
+        const window = getCurrentWindow();
+        console.log(window);
+
         break;
 
       default:

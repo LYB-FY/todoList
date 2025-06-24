@@ -84,4 +84,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![greet, save_todos, load_todos])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    
 }
+
+
