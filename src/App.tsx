@@ -13,6 +13,7 @@ import {
   Tag,
   Popconfirm,
   message,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
@@ -20,11 +21,13 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  RocketOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/zh-cn";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
 
 // 设置dayjs为中文
 dayjs.locale("zh-cn");
@@ -46,11 +49,42 @@ function App() {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(true);
+  const [autoStartEnabled, setAutoStartEnabled] = useState(false);
 
   // 从Rust后端加载数据
   useEffect(() => {
     loadTodosFromBackend();
+    checkAutoStartStatus();
   }, []);
+
+  // 检查自动启动状态
+  const checkAutoStartStatus = async () => {
+    try {
+      const enabled = await isEnabled();
+      setAutoStartEnabled(enabled);
+    } catch (error) {
+      console.error("检查自动启动状态失败:", error);
+    }
+  };
+
+  // 切换自动启动状态
+  const toggleAutoStart = async (checked: boolean) => {
+    try {
+      if (checked) {
+        await enable();
+        message.success("自动启动已开启");
+      } else {
+        await disable();
+        message.success("自动启动已关闭");
+      }
+      setAutoStartEnabled(checked);
+    } catch (error) {
+      console.error("切换自动启动状态失败:", error);
+      message.error("操作失败，请重试");
+      // 恢复原状态
+      setAutoStartEnabled(!checked);
+    }
+  };
 
   // 加载数据函数
   const loadTodosFromBackend = async () => {
@@ -164,6 +198,15 @@ function App() {
               placeholder="选择日期"
               style={{ width: 150 }}
             />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <RocketOutlined style={{ color: "#1890ff" }} />
+              <span style={{ fontSize: 12, color: "#666" }}>开机自启</span>
+              <Switch
+                checked={autoStartEnabled}
+                onChange={toggleAutoStart}
+                size="small"
+              />
+            </div>
           </Space>
         </div>
       </Header>

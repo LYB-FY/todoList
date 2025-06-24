@@ -12,6 +12,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-autostart": "~2.3.0",
     "@tauri-apps/plugin-opener": "^2",
     "antd": "^5.26.1",
     "dayjs": "^1.11.13",
