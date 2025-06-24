@@ -42,6 +42,7 @@ interface TodoItem {
   completed: boolean;
   date: string;
   created_at: string; // 注意：这里改为created_at以匹配Rust后端
+  completed_at?: string; // 新增完成时间字段
 }
 
 function App() {
@@ -137,6 +138,7 @@ function App() {
       completed: false,
       date: selectedDate.format("YYYY-MM-DD"),
       created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      completed_at: undefined, // 新增任务时完成时间为undefined
     };
 
     setTodos((prev) => [...prev, newTodo]);
@@ -148,7 +150,15 @@ function App() {
   const toggleTodo = (id: string) => {
     setTodos((prev) =>
       prev.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === id
+          ? {
+              ...todo,
+              completed: !todo.completed,
+              completed_at: !todo.completed
+                ? dayjs().format("YYYY-MM-DD HH:mm:ss") // 完成时记录时间
+                : undefined, // 取消完成时清除时间
+            }
+          : todo
       )
     );
   };
@@ -329,7 +339,11 @@ function App() {
                         <Space size="small">
                           <ClockCircleOutlined style={{ color: "#999" }} />
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            {dayjs(todo.created_at).format("HH:mm")}
+                            {
+                              todo.completed && todo.completed_at
+                                ? dayjs(todo.completed_at).format("HH:mm") // 已完成显示完成时间
+                                : dayjs(todo.created_at).format("HH:mm") // 未完成显示创建时间
+                            }
                           </Text>
                           {todo.completed && <Tag color="success">已完成</Tag>}
                         </Space>

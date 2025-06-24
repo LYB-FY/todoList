@@ -10,6 +10,7 @@ pub struct TodoItem {
     pub completed: bool,
     pub date: String,
     pub created_at: String,
+    pub completed_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
