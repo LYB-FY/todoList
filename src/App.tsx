@@ -70,26 +70,16 @@ function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 监听快捷键
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // 检查是否按下 Ctrl+Alt+T
-      if (event.ctrlKey && event.altKey && event.key === "t") {
-        event.preventDefault(); // 阻止默认行为
-        toggleAlwaysOnTop(!alwaysOnTopEnabled);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [alwaysOnTopEnabled]);
-
   // 从Rust后端加载数据
   useEffect(() => {
     loadTodosFromBackend();
     checkAutoStartStatus();
     checkAlwaysOnTopStatus();
   }, []);
+
+  useEffect(() => {
+    checkAlwaysOnTopStatus();
+  }, [settingsVisible]);
 
   // 检查自动启动状态
   const checkAutoStartStatus = async () => {

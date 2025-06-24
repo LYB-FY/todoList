@@ -13,6 +13,9 @@
     "autostart:allow-is-enabled",
     "core:window:allow-set-always-on-top",
     "core:app:allow-default-window-icon",
-    "core:app:allow-app-show"
+    "core:app:allow-app-show",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister"
   ]
 }
