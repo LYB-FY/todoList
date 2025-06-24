@@ -14,6 +14,8 @@ import {
   Popconfirm,
   message,
   Switch,
+  Drawer,
+  Divider,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,6 +25,7 @@ import {
   ClockCircleOutlined,
   RocketOutlined,
   PushpinOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/zh-cn";
@@ -54,6 +57,18 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [alwaysOnTopEnabled, setAlwaysOnTopEnabled] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // 从Rust后端加载数据
   useEffect(() => {
@@ -226,9 +241,13 @@ function App() {
             height: "100%",
           }}
         >
-          <Title level={3} style={{ margin: 0, color: "#1890ff" }}>
-            <CheckCircleOutlined /> TodoList
-          </Title>
+          {screenWidth >= 500 ? (
+            <Title level={3} style={{ margin: 0, color: "#1890ff" }}>
+              <CheckCircleOutlined /> TodoList
+            </Title>
+          ) : (
+            <div></div>
+          )}
           <Space>
             <CalendarOutlined style={{ color: "#1890ff" }} />
             <DatePicker
@@ -238,27 +257,72 @@ function App() {
               placeholder="选择日期"
               style={{ width: 150 }}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <RocketOutlined style={{ color: "#1890ff" }} />
-              <span style={{ fontSize: 12, color: "#666" }}>开机自启</span>
-              <Switch
-                checked={autoStartEnabled}
-                onChange={toggleAutoStart}
-                size="small"
-              />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <PushpinOutlined style={{ color: "#1890ff" }} />
-              <span style={{ fontSize: 12, color: "#666" }}>窗口置顶</span>
-              <Switch
-                checked={alwaysOnTopEnabled}
-                onChange={toggleAlwaysOnTop}
-                size="small"
-              />
-            </div>
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
+              onClick={() => setSettingsVisible(true)}
+              style={{ color: "#1890ff" }}
+            >
+              设置
+            </Button>
           </Space>
         </div>
       </Header>
+
+      <Drawer
+        title="设置"
+        placement="right"
+        onClose={() => setSettingsVisible(false)}
+        open={settingsVisible}
+        width={320}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <RocketOutlined style={{ color: "#1890ff" }} />
+                <span>开机自启</span>
+              </div>
+              <Switch checked={autoStartEnabled} onChange={toggleAutoStart} />
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              应用启动时自动运行
+            </Text>
+          </div>
+
+          <Divider />
+
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <PushpinOutlined style={{ color: "#1890ff" }} />
+                <span>窗口置顶</span>
+              </div>
+              <Switch
+                checked={alwaysOnTopEnabled}
+                onChange={toggleAlwaysOnTop}
+              />
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              窗口始终显示在最前面
+            </Text>
+          </div>
+        </div>
+      </Drawer>
 
       <Content style={{ padding: "24px", background: "#f5f5f5" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
@@ -298,7 +362,7 @@ function App() {
               placeholder="输入新任务..."
               enterButton={
                 <Button type="primary" icon={<PlusOutlined />}>
-                  添加任务
+                  {screenWidth >= 500 ? "添加任务" : ""}
                 </Button>
               }
               value={inputValue}
