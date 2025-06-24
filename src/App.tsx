@@ -22,12 +22,14 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   RocketOutlined,
+  PushpinOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/zh-cn";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 // 设置dayjs为中文
 dayjs.locale("zh-cn");
@@ -51,11 +53,13 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(true);
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
+  const [alwaysOnTopEnabled, setAlwaysOnTopEnabled] = useState(false);
 
   // 从Rust后端加载数据
   useEffect(() => {
     loadTodosFromBackend();
     checkAutoStartStatus();
+    checkAlwaysOnTopStatus();
   }, []);
 
   // 检查自动启动状态
@@ -84,6 +88,32 @@ function App() {
       message.error("操作失败，请重试");
       // 恢复原状态
       setAutoStartEnabled(!checked);
+    }
+  };
+
+  // 检查窗口置顶状态
+  const checkAlwaysOnTopStatus = async () => {
+    try {
+      const window = getCurrentWindow();
+      const isAlwaysOnTop = await window.isAlwaysOnTop();
+      setAlwaysOnTopEnabled(isAlwaysOnTop);
+    } catch (error) {
+      console.error("检查窗口置顶状态失败:", error);
+    }
+  };
+
+  // 切换窗口置顶状态
+  const toggleAlwaysOnTop = async (checked: boolean) => {
+    try {
+      const window = getCurrentWindow();
+      await window.setAlwaysOnTop(checked);
+      setAlwaysOnTopEnabled(checked);
+      message.success(checked ? "窗口已置顶" : "窗口已取消置顶");
+    } catch (error) {
+      console.error("切换窗口置顶状态失败:", error);
+      message.error("操作失败，请重试");
+      // 恢复原状态
+      setAlwaysOnTopEnabled(!checked);
     }
   };
 
@@ -214,6 +244,15 @@ function App() {
               <Switch
                 checked={autoStartEnabled}
                 onChange={toggleAutoStart}
+                size="small"
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <PushpinOutlined style={{ color: "#1890ff" }} />
+              <span style={{ fontSize: 12, color: "#666" }}>窗口置顶</span>
+              <Switch
+                checked={alwaysOnTopEnabled}
+                onChange={toggleAlwaysOnTop}
                 size="small"
               />
             </div>
