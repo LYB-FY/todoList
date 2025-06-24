@@ -70,6 +70,20 @@ function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // 监听快捷键
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // 检查是否按下 Ctrl+Alt+T
+      if (event.ctrlKey && event.altKey && event.key === "t") {
+        event.preventDefault(); // 阻止默认行为
+        toggleAlwaysOnTop(!alwaysOnTopEnabled);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [alwaysOnTopEnabled]);
+
   // 从Rust后端加载数据
   useEffect(() => {
     loadTodosFromBackend();
@@ -225,7 +239,15 @@ function App() {
   const stats = getStats();
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout
+      style={{
+        minHeight: "100vh",
+        maxHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Header
         style={{
           background: "#fff",
@@ -256,6 +278,92 @@ function App() {
               format="YYYY-MM-DD"
               placeholder="选择日期"
               style={{ width: 150 }}
+              cellRender={(current, info) => {
+                if (info.type !== "date") return info.originNode;
+
+                const dayjsCurrent = dayjs(current);
+                const dateStr = dayjsCurrent.format("YYYY-MM-DD");
+                const isToday = dayjsCurrent.isSame(dayjs(), "day");
+                const isSelected = dayjsCurrent.isSame(selectedDate, "day");
+                const hasTodos = todos.some(
+                  (todo) => dayjs(todo.date).format("YYYY-MM-DD") === dateStr
+                );
+                const hasUncompletedTodos = todos.some(
+                  (todo) =>
+                    dayjs(todo.date).format("YYYY-MM-DD") === dateStr &&
+                    !todo.completed
+                );
+
+                // 确定背景色
+                let backgroundColor = "transparent";
+                if (isSelected) {
+                  backgroundColor = "#1890ff";
+                } else if (isToday) {
+                  backgroundColor = "#f0f8ff";
+                }
+
+                return (
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "32px",
+                      height: "32px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "50%",
+                      transition: "all 0.2s ease",
+                      backgroundColor: backgroundColor,
+                      border:
+                        isToday && !isSelected ? "1px solid #1890ff" : "none",
+                      margin: "0 auto",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: hasTodos ? "600" : "400",
+                        color: isSelected
+                          ? hasUncompletedTodos
+                            ? "#ff4d4f"
+                            : hasTodos
+                            ? "#52c41a"
+                            : "#fff"
+                          : hasUncompletedTodos
+                          ? "#ff4d4f"
+                          : hasTodos
+                          ? "#52c41a"
+                          : "inherit",
+                      }}
+                    >
+                      {dayjsCurrent.date()}
+                    </span>
+                    {hasTodos && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 2,
+                          right: 2,
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          backgroundColor: isSelected
+                            ? hasUncompletedTodos
+                              ? "#ff4d4f"
+                              : "#52c41a"
+                            : hasUncompletedTodos
+                            ? "#ff4d4f"
+                            : "#52c41a",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                          border: isSelected
+                            ? "1px solid #fff"
+                            : "1px solid #fff",
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              }}
             />
             <Button
               type="text"
@@ -269,62 +377,15 @@ function App() {
         </div>
       </Header>
 
-      <Drawer
-        title="设置"
-        placement="right"
-        onClose={() => setSettingsVisible(false)}
-        open={settingsVisible}
-        width={320}
+      <Content
+        style={{
+          padding: "24px",
+          background: "#f5f5f5",
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+        }}
       >
-        <div style={{ padding: "16px 0" }}>
-          <div style={{ marginBottom: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <RocketOutlined style={{ color: "#1890ff" }} />
-                <span>开机自启</span>
-              </div>
-              <Switch checked={autoStartEnabled} onChange={toggleAutoStart} />
-            </div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              应用启动时自动运行
-            </Text>
-          </div>
-
-          <Divider />
-
-          <div style={{ marginBottom: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <PushpinOutlined style={{ color: "#1890ff" }} />
-                <span>窗口置顶</span>
-              </div>
-              <Switch
-                checked={alwaysOnTopEnabled}
-                onChange={toggleAlwaysOnTop}
-              />
-            </div>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              窗口始终显示在最前面
-            </Text>
-          </div>
-        </div>
-      </Drawer>
-
-      <Content style={{ padding: "24px", background: "#f5f5f5" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
           {/* 统计信息 */}
           <Card style={{ marginBottom: 16 }}>
@@ -459,6 +520,66 @@ function App() {
           </Card>
         </div>
       </Content>
+
+      <Drawer
+        title="设置"
+        placement="right"
+        onClose={() => setSettingsVisible(false)}
+        open={settingsVisible}
+        width={320}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <RocketOutlined style={{ color: "#1890ff" }} />
+                <span>开机自启</span>
+              </div>
+              <Switch checked={autoStartEnabled} onChange={toggleAutoStart} />
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              应用启动时自动运行
+            </Text>
+          </div>
+
+          <Divider />
+
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <PushpinOutlined style={{ color: "#1890ff" }} />
+                <span>窗口置顶</span>
+              </div>
+              <Switch
+                checked={alwaysOnTopEnabled}
+                onChange={toggleAlwaysOnTop}
+              />
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              窗口始终显示在最前面
+            </Text>
+            <div style={{ marginTop: 4 }}>
+              <Tag color="blue" style={{ fontSize: 11 }}>
+                快捷键: Ctrl+Alt+T
+              </Tag>
+            </div>
+          </div>
+        </div>
+      </Drawer>
     </Layout>
   );
 }

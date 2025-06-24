@@ -152,3 +152,11 @@ a:hover {
 h1 {
   text-align: center;
 }
+
+/* 媒体查询宽度小于400px */
+@media (max-width: 400px) {
+  .ant-picker-dropdown {
+    transform: scale(0.7) !important;
+    transform-origin: left !important;
+  }
+}
