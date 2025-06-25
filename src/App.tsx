@@ -340,9 +340,8 @@ function App() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <DragOutlined style={{ color: "#fff", fontSize: 16 }} />
             <span style={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>
-              拖拽区域 - TodoList
+              TodoList
             </span>
           </div>
           <div className="window-controls" onClick={(e) => e.stopPropagation()}>
