@@ -318,16 +318,17 @@ function App() {
   };
 
   const handleAiSummary = async () => {
-    // 判断今日是否有任务
+    // 判断选择的日期是否有任务
     const todayTodos = todos.filter(
       (todo) =>
-        dayjs(todo.date).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD")
+        dayjs(todo.date).format("YYYY-MM-DD") ===
+        selectedDate.format("YYYY-MM-DD")
     );
     if (todayTodos.length === 0) {
       message.warning("今日无事，勾栏听区儿");
       return;
     }
-    // 根据今日的数据生成text，需要区分完成和未完成
+    // 根据选择的日期的数据生成text，需要区分完成和未完成
     const completedTodos = todayTodos.filter((todo) => todo.completed);
     const uncompletedTodos = todayTodos.filter((todo) => !todo.completed);
     const text = `今日完成任务：${completedTodos
