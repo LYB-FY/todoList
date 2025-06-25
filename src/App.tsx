@@ -56,7 +56,6 @@ interface TodoItem {
 }
 
 function App() {
-  const [api, contextHolder] = notification.useNotification();
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [inputValue, setInputValue] = useState("");
