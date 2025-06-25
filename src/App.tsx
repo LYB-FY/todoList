@@ -16,6 +16,8 @@ import {
   Switch,
   Drawer,
   Divider,
+  Spin,
+  notification,
 } from "antd";
 import {
   PlusOutlined,
@@ -34,6 +36,8 @@ import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { Footer } from "antd/es/layout/layout";
+import { aiSummary } from "./service";
 
 // 设置dayjs为中文
 dayjs.locale("zh-cn");
@@ -52,6 +56,7 @@ interface TodoItem {
 }
 
 function App() {
+  const [api, contextHolder] = notification.useNotification();
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [inputValue, setInputValue] = useState("");
@@ -64,6 +69,7 @@ function App() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [customDragBarEnabled, setCustomDragBarEnabled] = useState(true);
   const dragRef = useRef<HTMLDivElement>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -310,6 +316,51 @@ function App() {
     } catch (error) {
       console.error("最大化/还原窗口失败:", error);
     }
+  };
+
+  const handleAiSummary = async () => {
+    // 判断今日是否有任务
+    const todayTodos = todos.filter(
+      (todo) =>
+        dayjs(todo.date).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD")
+    );
+    if (todayTodos.length === 0) {
+      message.warning("今日无事，勾栏听区儿");
+      return;
+    }
+    // 根据今日的数据生成text，需要区分完成和未完成
+    const completedTodos = todayTodos.filter((todo) => todo.completed);
+    const uncompletedTodos = todayTodos.filter((todo) => !todo.completed);
+    const text = `今日完成任务：${completedTodos
+      .map((todo) => todo.content)
+      .join("、")}${
+      !completedTodos.length && "无"
+    }。今日未完成任务：${uncompletedTodos
+      .map((todo) => todo.content)
+      .join("、")}${!uncompletedTodos.length && "无"}。`;
+    setSummaryLoading(true);
+    const response = await aiSummary(
+      `以下是我今天完成和未完成的任务，${text}。帮我生成今日总结当做日报，只需要返回日报总结正文，不需要返回其他内容，丰富一下日报内容，不要自己创造内容。`
+    );
+    const data = await response.json();
+    console.log(data);
+    notification.open({
+      message: `AI总结`,
+      description: data.choices[0].message.content,
+      duration: 0,
+      btn: (
+        <Button
+          type="primary"
+          onClick={() => {
+            navigator.clipboard.writeText(data.choices[0].message.content);
+            message.success("复制成功");
+          }}
+        >
+          复制
+        </Button>
+      ),
+    });
+    setSummaryLoading(false);
   };
 
   return (
@@ -642,6 +693,14 @@ function App() {
         </div>
       </Content>
 
+      <Footer>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Button type="primary" onClick={handleAiSummary}>
+            今日AI总结
+          </Button>
+        </div>
+      </Footer>
+
       <Drawer
         title="设置"
         placement="right"
@@ -726,6 +785,8 @@ function App() {
           </div>
         </div>
       </Drawer>
+
+      <Spin spinning={summaryLoading} fullscreen tip="AI总结中..."></Spin>
     </Layout>
   );
 }
