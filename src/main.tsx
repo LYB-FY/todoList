@@ -61,11 +61,24 @@ await register("CommandOrControl+Alt+T", async () => {
   }
 });
 
+const itemAction = async (key: any) => {
+  console.log(key, "key");
+  switch (key) {
+    case "quit":
+      const window = getCurrentWindow();
+      await window.close();
+      break;
+    default:
+      break;
+  }
+};
+
 const menu = await Menu.new({
   items: [
     {
       id: "quit",
       text: "退出",
+      action: itemAction,
     },
   ],
 });
