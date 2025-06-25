@@ -344,7 +344,11 @@ function App() {
               TodoList
             </span>
           </div>
-          <div className="window-controls" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="window-controls"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div
               onClick={handleCloseWindow}
               className="window-control-button close"
