@@ -7,7 +7,6 @@ import zhCN from "antd/locale/zh_CN";
 // for date-picker i18n
 import "dayjs/locale/zh-cn";
 
-import { show } from "@tauri-apps/api/app";
 import { TrayIcon } from "@tauri-apps/api/tray";
 import { defaultWindowIcon } from "@tauri-apps/api/app";
 import { Menu } from "@tauri-apps/api/menu";
@@ -17,19 +16,40 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 // 添加防抖标志
 let isProcessingShortcut = false;
 
-await register("CommandOrControl+Shift+T", async () => {
+/**
+ * 窗口置顶显示
+ */
+async function winShowFocus() {
+  // 获取窗体实例
+  const win = getCurrentWindow();
+  // 检查窗口是否见，如果不可见则显示出来
+  if (!(await win.isVisible())) {
+    win.show();
+  } else {
+    // 检查是否处于最小化状态，如果处于最小化状态则解除最小化
+    if (await win.isMinimized()) {
+      await win.unminimize();
+    }
+    // 窗口置顶
+    await win.setFocus();
+  }
+}
+
+await register("CommandOrControl+Alt+T", async () => {
   // 防止重复执行
   if (isProcessingShortcut) {
     return;
   }
 
   isProcessingShortcut = true;
-  console.log("Shortcut triggered");
 
   try {
     const window = getCurrentWindow();
     const isAlwaysOnTop = await window.isAlwaysOnTop();
     await window.setAlwaysOnTop(!isAlwaysOnTop);
+    if (!isAlwaysOnTop) {
+      winShowFocus();
+    }
     message.success(isAlwaysOnTop ? "窗口已取消置顶" : "窗口已置顶");
   } catch (error) {
     console.error("快捷键执行失败:", error);
@@ -58,8 +78,7 @@ const options = {
   action: (event: any) => {
     switch (event.type) {
       case "DoubleClick":
-        const window = getCurrentWindow();
-        console.log(window);
+        winShowFocus();
 
         break;
 

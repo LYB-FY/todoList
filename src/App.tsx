@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Layout,
   Card,
@@ -26,6 +26,7 @@ import {
   RocketOutlined,
   PushpinOutlined,
   SettingOutlined,
+  DragOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/zh-cn";
@@ -59,6 +60,10 @@ function App() {
   const [alwaysOnTopEnabled, setAlwaysOnTopEnabled] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [customDragBarEnabled, setCustomDragBarEnabled] = useState(true);
+  const dragRef = useRef<HTMLDivElement>(null);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -228,6 +233,85 @@ function App() {
 
   const stats = getStats();
 
+  // 拖拽相关函数
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // 只处理左键点击
+
+    setIsDragging(true);
+    const rect = dragRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    }
+  };
+
+  const handleMouseMove = async (e: MouseEvent) => {
+    if (!isDragging) return;
+
+    const newX = e.clientX - dragOffset.x;
+    const newY = e.clientY - dragOffset.y;
+
+    // 使用Tauri API移动窗口
+    try {
+      // 使用invoke调用Rust后端的窗口移动功能
+      await invoke("move_window", { x: newX, y: newY });
+    } catch (error) {
+      console.error("移动窗口失败:", error);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // 监听鼠标事件
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset]);
+
+  // 窗口控制函数
+  const handleCloseWindow = async () => {
+    try {
+      const window = getCurrentWindow();
+      await window.hide();
+    } catch (error) {
+      console.error("关闭窗口失败:", error);
+    }
+  };
+
+  const handleMinimizeWindow = async () => {
+    try {
+      const window = getCurrentWindow();
+      await window.minimize();
+    } catch (error) {
+      console.error("最小化窗口失败:", error);
+    }
+  };
+
+  const handleMaximizeWindow = async () => {
+    try {
+      const window = getCurrentWindow();
+      const isMaximized = await window.isMaximized();
+      if (isMaximized) {
+        await window.unmaximize();
+      } else {
+        await window.maximize();
+      }
+    } catch (error) {
+      console.error("最大化/还原窗口失败:", error);
+    }
+  };
+
   return (
     <Layout
       style={{
@@ -236,13 +320,57 @@ function App() {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        userSelect: "none", // 防止拖拽时选中文本
       }}
     >
+      {/* 自定义拖拽栏 */}
+      {customDragBarEnabled && (
+        <div
+          ref={dragRef}
+          onMouseDown={handleMouseDown}
+          className={`drag-bar ${isDragging ? "dragging" : ""}`}
+          style={{
+            height: "32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 16px",
+            position: "relative",
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <DragOutlined style={{ color: "#fff", fontSize: 16 }} />
+            <span style={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>
+              拖拽区域 - TodoList
+            </span>
+          </div>
+          <div className="window-controls" onClick={(e) => e.stopPropagation()}>
+            <div
+              onClick={handleCloseWindow}
+              className="window-control-button close"
+              title="关闭"
+            />
+            <div
+              onClick={handleMinimizeWindow}
+              className="window-control-button minimize"
+              title="最小化"
+            />
+            <div
+              onClick={handleMaximizeWindow}
+              className="window-control-button maximize"
+              title="最大化"
+            />
+          </div>
+        </div>
+      )}
+
       <Header
         style={{
           background: "#fff",
           padding: "0 24px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          height: "64px", // 增加高度以适应拖拽栏
         }}
       >
         <div
@@ -567,6 +695,31 @@ function App() {
                 快捷键: Ctrl+Alt+T
               </Tag>
             </div>
+          </div>
+
+          <Divider />
+
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <DragOutlined style={{ color: "#1890ff" }} />
+                <span>自定义拖拽栏</span>
+              </div>
+              <Switch
+                checked={customDragBarEnabled}
+                onChange={setCustomDragBarEnabled}
+              />
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              启用自定义窗口拖拽栏和控制按钮
+            </Text>
           </div>
         </div>
       </Drawer>

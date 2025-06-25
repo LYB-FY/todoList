@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use tauri::Position;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TodoItem {
@@ -72,6 +73,14 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// 移动窗口命令
+#[tauri::command]
+async fn move_window(window: tauri::Window, x: f64, y: f64) -> Result<(), String> {
+    let position = Position::Physical(tauri::PhysicalPosition::new(x as i32, y as i32));
+    window.set_position(position).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -81,11 +90,12 @@ pub fn run() {
             Some(vec!["--flag1", "--flag2"]), /* 传递给应用程序的任意数量的参数 */
         ))
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, save_todos, load_todos])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            save_todos,
+            load_todos,
+            move_window
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-
-    
 }
-
-
