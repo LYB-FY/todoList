@@ -1,7 +1,8 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { config, config2 } from "../config";
 
 export const aiSummary = (text: string) => {
-  return fetch("https://api.siliconflow.cn/v1/chat/completions", {
+  return fetch(config.apiUrl, {
     method: "POST",
     body: JSON.stringify({
       model: "deepseek-ai/DeepSeek-V3",
@@ -9,13 +10,13 @@ export const aiSummary = (text: string) => {
     }),
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer sk-riqmwjqzwciycysdozhyakrpbngbkdhsjqlmtxtrxtilwtce`,
+      Authorization: `Bearer ${config.apiKey}`,
     },
   });
 };
 
 export const aiSummary2 = (text: string) => {
-  return fetch("https://ark.cn-beijing.volces.com/api/v3/chat/completions", {
+  return fetch(config2.apiUrl, {
     method: "POST",
     body: JSON.stringify({
       model: "deepseek-r1-250528",
@@ -23,7 +24,7 @@ export const aiSummary2 = (text: string) => {
     }),
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer acb9a57d-b33a-4ee2-be2d-d754fdef3a72`,
+      Authorization: `Bearer ${config2.apiKey}`,
     },
   });
 };
